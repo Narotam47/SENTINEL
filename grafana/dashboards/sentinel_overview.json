@@ -1,59 +1,419 @@
 {
   "__inputs": [],
   "__requires": [],
-  "annotations": { "list": [] },
-  "description": "SENTINEL — Manufacturing Yield Overview",
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": { "type": "grafana", "uid": "-- Grafana --" },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "SENTINEL — Manufacturing Process Monitoring & Yield Analytics. Tracks wafer yield, sensor health, anomaly events, and statistical process control violations for the SECOM semiconductor dataset.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
   "links": [],
   "panels": [
+
     {
       "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+      "description": "Weekly count of wafer runs that passed (green) versus failed (red) the yield test. An upward trend in the red Fail line signals a yield excursion that requires process investigation. Hover over any point to see exact pass/fail counts for that week.",
       "fieldConfig": {
-        "defaults": { "color": { "mode": "thresholds" },
-          "thresholds": { "mode": "absolute", "steps": [
-            { "color": "red", "value": null },
-            { "color": "yellow", "value": 0.85 },
-            { "color": "green", "value": 0.93 }
-          ]}
-        }
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Wafer Runs",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 12,
+            "gradientMode": "opacity",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "insertNulls": false,
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 4,
+            "scaleDistribution": { "type": "linear" },
+            "showPoints": "auto",
+            "spanNulls": true,
+            "stacking": { "group": "A", "mode": "none" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Pass" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "semi-dark-green", "mode": "fixed" } }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Fail" },
+            "properties": [
+              { "id": "color", "value": { "fixedColor": "semi-dark-red", "mode": "fixed" } }
+            ]
+          }
+        ]
       },
-      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "gridPos": { "h": 9, "w": 16, "x": 0, "y": 0 },
       "id": 1,
-      "options": { "colorMode": "background", "graphMode": "none",
-                   "justifyMode": "center", "orientation": "auto",
-                   "reduceOptions": { "calcs": ["lastNotNull"] },
-                   "textMode": "auto" },
-      "title": "Overall Yield Rate",
-      "type": "stat",
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "sentinel-pg" },
-        "format": "table",
-        "rawSql": "SELECT yield_rate FROM yield_metrics WHERE window_type='daily' ORDER BY window_end DESC LIMIT 1",
-        "refId": "A"
-      }]
+      "options": {
+        "legend": {
+          "calcs": ["sum"],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": { "mode": "multi", "sort": "none" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  date_trunc('week', timestamp) AS time,\n  COUNT(*) FILTER (WHERE label = -1) AS \"Pass\",\n  COUNT(*) FILTER (WHERE label = 1)  AS \"Fail\"\nFROM secom_raw\nWHERE $__timeFilter(timestamp)\nGROUP BY 1\nORDER BY 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Yield Trend Over Time",
+      "type": "timeseries"
     },
+
     {
       "datasource": { "type": "postgres", "uid": "sentinel-pg" },
-      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } },
-      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+      "description": "Composite data quality score for the most recent validation run, on a 0–100 scale. Green (≥90) means the sensor data is clean and trustworthy. Yellow (60–89) indicates moderate issues such as missing readings or out-of-range values. Red (<60) means the data has significant problems that could affect yield predictions.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "orange", "value": 60   },
+              { "color": "yellow", "value": 75   },
+              { "color": "green",  "value": 90   }
+            ]
+          },
+          "unit": "none"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
       "id": 2,
-      "options": { "tooltip": { "mode": "multi" } },
-      "title": "Yield Rate Over Time (Daily)",
-      "type": "timeseries",
-      "targets": [{
-        "datasource": { "type": "postgres", "uid": "sentinel-pg" },
-        "format": "time_series",
-        "rawSql": "SELECT window_end AS time, yield_rate FROM yield_metrics WHERE window_type='daily' ORDER BY window_end",
-        "refId": "A"
-      }]
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  ROUND(overall_quality_score, 2) AS \"Overall Quality Score\",\n  n_rows                         AS \"Rows Validated\",\n  n_sensors                      AS \"Sensors Checked\"\nFROM validation_runs\nORDER BY validated_at DESC\nLIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Data Quality Score",
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+      "description": "Count of anomalous wafer runs flagged by the Isolation Forest model, broken down by batch. Anomalous readings are runs where the combination of sensor values falls far outside normal operating patterns — even if no single sensor is out of spec. High anomaly counts in a batch are a leading indicator of yield problems.",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green",  "value": null },
+              { "color": "yellow", "value": 3    },
+              { "color": "red",    "value": 7    }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 5, "w": 8, "x": 16, "y": 4 },
+      "id": 6,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "center",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
+        "showPercentChange": false,
+        "textMode": "value_and_name",
+        "wideLayout": true
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  COUNT(*) FILTER (WHERE is_anomaly = TRUE)                 AS \"Anomalies Flagged\",\n  COUNT(*) FILTER (WHERE is_anomaly = TRUE AND label = 1)  AS \"Anomalies That Failed\",\n  COUNT(*)                                                  AS \"Total Runs\"\nFROM secom_raw",
+          "refId": "A"
+        }
+      ],
+      "title": "Anomaly Summary",
+      "type": "stat"
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+      "description": "The 20 sensors with the lowest average data quality scores, sorted worst-first (left). A low score can mean the sensor frequently produces missing readings, out-of-range values, or constant (stuck) values. Sensors near the left of this chart are candidates for calibration or replacement. The colour transitions from red (poor) through yellow to green (good).",
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "continuous-RdYlGr" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisColorMode": "text",
+            "axisLabel": "Avg Quality Score (0–100)",
+            "axisPlacement": "auto",
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "lineWidth": 1,
+            "scaleDistribution": { "type": "linear" },
+            "thresholdsStyle": { "mode": "off" }
+          },
+          "mappings": [],
+          "max": 100,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red",    "value": null },
+              { "color": "yellow", "value": 60   },
+              { "color": "green",  "value": 90   }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 9 },
+      "id": 3,
+      "options": {
+        "barRadius": 0.05,
+        "barWidth": 0.7,
+        "colorByField": "Avg Quality Score",
+        "fillOpacity": 80,
+        "gradientMode": "none",
+        "groupWidth": 0.7,
+        "legend": {
+          "displayMode": "hidden",
+          "placement": "bottom",
+          "showLegend": false
+        },
+        "orientation": "horizontal",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": { "mode": "single", "sort": "none" },
+        "xField": "Sensor",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": 0
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  sensor_name                             AS \"Sensor\",\n  ROUND(AVG(quality_score)::NUMERIC, 2)  AS \"Avg Quality Score\"\nFROM sensor_quality\nGROUP BY sensor_name\nORDER BY \"Avg Quality Score\" ASC\nLIMIT 20",
+          "refId": "A"
+        }
+      ],
+      "title": "Sensor Health: Lowest-Scoring Sensors",
+      "type": "barchart"
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+      "description": "Individual wafer runs flagged as anomalous by the Isolation Forest model. The Anomaly Score column shows how far outside normal the run was — more negative means more unusual. Runs labelled FAIL actually failed the yield test; runs labelled pass were flagged by the model but still passed, suggesting they are near-miss events worth monitoring. Click the Timestamp column header to sort chronologically.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "filterable": true,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Yield Outcome" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "applyToRow": false, "type": "colored-text" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "semi-dark-green", "value": null },
+                    { "color": "semi-dark-red",   "value": 1    }
+                  ]
+                }
+              },
+              { "id": "color", "value": { "mode": "thresholds" } },
+              { "id": "mappings", "value": [
+                  { "options": { "FAIL": { "index": 0, "text": "FAIL ⚠" }, "pass": { "index": 1, "text": "pass" } }, "type": "value" }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "Anomaly Score" },
+            "properties": [
+              { "id": "custom.cellOptions", "value": { "type": "auto" } },
+              { "id": "decimals", "value": 4 }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 9 },
+      "id": 4,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": false,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": false
+        },
+        "showHeader": true,
+        "sortBy": [{ "desc": true, "displayName": "Anomaly Score" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  batch_id                                           AS \"Batch ID\",\n  timestamp                                          AS \"Timestamp\",\n  ROUND(anomaly_score::NUMERIC, 4)                   AS \"Anomaly Score\",\n  CASE WHEN label = 1 THEN 'FAIL' ELSE 'pass' END   AS \"Yield Outcome\"\nFROM secom_raw\nWHERE is_anomaly = TRUE\nORDER BY anomaly_score ASC\nLIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "title": "Anomalous Sensor Readings",
+      "type": "table"
+    },
+
+    {
+      "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+      "description": "Western Electric rule violations detected on the top-10 most yield-correlated sensors. Rule 1 (most severe) means a single reading fell outside the 3-sigma control limits — the process is definitely out of control. Rules 2–4 are pattern-based warnings that the process is drifting before it breaks the hard limits. UCL = Upper Control Limit, LCL = Lower Control Limit, Centre Line = process mean. Sort by Rule # to see the most urgent violations first.",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "filterable": true,
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [{ "color": "green", "value": null }]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Rule #" },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": { "applyToRow": false, "type": "colored-background" }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "yellow", "value": null },
+                    { "color": "red",    "value": 1    },
+                    { "color": "orange", "value": 2    },
+                    { "color": "yellow", "value": 3    }
+                  ]
+                }
+              },
+              { "id": "color", "value": { "mode": "thresholds" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 19 },
+      "id": 5,
+      "options": {
+        "cellHeight": "sm",
+        "footer": {
+          "countRows": true,
+          "fields": "",
+          "reducer": ["sum"],
+          "show": true
+        },
+        "showHeader": true,
+        "sortBy": [{ "desc": false, "displayName": "Rule #" }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  sensor_name                             AS \"Sensor\",\n  ts                                      AS \"Timestamp\",\n  rule_number                             AS \"Rule #\",\n  rule_desc                               AS \"Rule Violated\",\n  ROUND(value::NUMERIC, 4)               AS \"Value\",\n  ROUND(center_line::NUMERIC, 4)         AS \"Centre Line\",\n  ROUND(ucl::NUMERIC, 4)                 AS \"UCL\",\n  ROUND(lcl::NUMERIC, 4)                 AS \"LCL\"\nFROM spc_flags\nORDER BY rule_number ASC, ts DESC\nLIMIT 200",
+          "refId": "A"
+        }
+      ],
+      "title": "SPC Out-of-Control Events",
+      "type": "table"
     }
+
   ],
+
+  "refresh": "5m",
   "schemaVersion": 38,
-  "tags": ["sentinel", "yield", "manufacturing"],
-  "title": "SENTINEL — Yield Overview",
+  "tags": ["sentinel", "yield", "manufacturing", "spc"],
+  "time": { "from": "2008-01-01T00:00:00.000Z", "to": "2008-07-10T00:00:00.000Z" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "SENTINEL — Manufacturing Process Monitoring",
   "uid": "sentinel-overview",
-  "version": 1
+  "version": 2,
+  "weekStart": ""
 }

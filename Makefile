@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs ps setup-python profile migrate ingest validate quality-report transform train erd feature-select spc anomaly yield-analysis analytics status test clean
+.PHONY: help up down restart logs ps setup-python profile migrate ingest validate quality-report transform train erd feature-select spc anomaly yield-analysis analytics dashboard-check status test clean
 
 # Default target
 help:
@@ -26,6 +26,7 @@ help:
 	@echo "  make anomaly        Phase 3C: Isolation Forest → secom_raw anomaly cols + CSV"
 	@echo "  make yield-analysis Phase 3D: Random Forest → yield drivers + report"
 	@echo "  make analytics      Run all four Phase 3 steps in sequence"
+	@echo "  make dashboard-check  Verify Grafana health and open dashboard in browser"
 	@echo ""
 	@echo "  make status       Full system health check"
 	@echo "  make test         Run pytest suite"
@@ -107,6 +108,28 @@ yield-analysis:
 	.venv/bin/python pipeline/analytics/yield_analysis.py
 
 analytics: feature-select spc anomaly yield-analysis
+
+dashboard-check:
+	@echo "=== Grafana API health ==="
+	@curl -sf http://localhost:3000/api/health | python3 -m json.tool \
+		|| echo "  ✗  Grafana not reachable at http://localhost:3000 — run: make up"
+	@echo ""
+	@echo "=== Dashboard provisioned? ==="
+	@curl -sf -u admin:sentinel_grafana \
+		http://localhost:3000/api/dashboards/uid/sentinel-overview \
+		| python3 -c "import sys,json; d=json.load(sys.stdin); print('  ✓  Dashboard:', d['dashboard']['title'], '— panels:', len(d['dashboard']['panels']))" \
+		|| echo "  ✗  Dashboard not found — restart Grafana: docker compose restart grafana"
+	@echo ""
+	@echo "=== Datasource connected? ==="
+	@curl -sf -u admin:sentinel_grafana \
+		http://localhost:3000/api/datasources/name/SENTINEL_PostgreSQL \
+		| python3 -c "import sys,json; d=json.load(sys.stdin); print('  ✓  Datasource:', d['name'], '—', d['url'])" \
+		|| echo "  ✗  Datasource not found"
+	@echo ""
+	@echo "Opening http://localhost:3000/d/sentinel-overview …"
+	@open "http://localhost:3000/d/sentinel-overview" 2>/dev/null || \
+		xdg-open "http://localhost:3000/d/sentinel-overview" 2>/dev/null || \
+		echo "  Navigate to: http://localhost:3000/d/sentinel-overview"
 
 erd:
 	mkdir -p docs
