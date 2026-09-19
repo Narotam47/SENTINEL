@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs ps setup-python profile migrate ingest validate quality-report transform train erd status test clean
+.PHONY: help up down restart logs ps setup-python profile migrate ingest validate quality-report transform train erd feature-select spc anomaly yield-analysis analytics status test clean
 
 # Default target
 help:
@@ -20,6 +20,12 @@ help:
 	@echo "  make transform      Run feature engineering pipeline"
 	@echo "  make train          Train yield prediction model"
 	@echo "  make erd            Generate ERD diagram → docs/erd.png"
+	@echo ""
+	@echo "  make feature-select Phase 3A: sensor filter + MI ranking → secom_features + CSV"
+	@echo "  make spc            Phase 3B: I-MR control charts → spc_flags table"
+	@echo "  make anomaly        Phase 3C: Isolation Forest → secom_raw anomaly cols + CSV"
+	@echo "  make yield-analysis Phase 3D: Random Forest → yield drivers + report"
+	@echo "  make analytics      Run all four Phase 3 steps in sequence"
 	@echo ""
 	@echo "  make status       Full system health check"
 	@echo "  make test         Run pytest suite"
@@ -66,6 +72,8 @@ migrate:
 		< db/migrations/002_audit_columns.sql
 	docker exec -i sentinel_postgres psql -U sentinel -d sentinel_db \
 		< db/migrations/003_data_quality.sql
+	docker exec -i sentinel_postgres psql -U sentinel -d sentinel_db \
+		< db/migrations/004_spc.sql
 	@echo "All migrations applied."
 
 ingest: profile migrate
@@ -83,6 +91,22 @@ transform:
 
 train:
 	.venv/bin/python pipeline/model/train.py
+
+feature-select: migrate
+	mkdir -p data/exports
+	.venv/bin/python pipeline/transform/feature_selection.py
+
+spc:
+	.venv/bin/python pipeline/analytics/spc.py
+
+anomaly:
+	.venv/bin/python pipeline/analytics/anomaly.py
+
+yield-analysis:
+	mkdir -p data/exports
+	.venv/bin/python pipeline/analytics/yield_analysis.py
+
+analytics: feature-select spc anomaly yield-analysis
 
 erd:
 	mkdir -p docs
