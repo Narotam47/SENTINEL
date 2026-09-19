@@ -1,4 +1,4 @@
-.PHONY: help up down restart logs ps setup-python profile migrate ingest transform train erd status test clean
+.PHONY: help up down restart logs ps setup-python profile migrate ingest validate quality-report transform train erd status test clean
 
 # Default target
 help:
@@ -11,13 +11,15 @@ help:
 	@echo "  make logs         Tail all container logs"
 	@echo "  make ps           Show running containers"
 	@echo ""
-	@echo "  make setup-python Create venv and install Python dependencies"
-	@echo "  make profile      Profile raw SECOM files (shape, missing, imbalance)"
-	@echo "  make migrate      Apply pending DB migrations to running container"
-	@echo "  make ingest       Full ingest: profile → migrate → load into PostgreSQL"
-	@echo "  make transform    Run feature engineering pipeline"
-	@echo "  make train        Train yield prediction model"
-	@echo "  make erd          Generate ERD diagram → docs/erd.png"
+	@echo "  make setup-python   Create venv and install Python dependencies"
+	@echo "  make profile        Profile raw SECOM files (shape, missing, imbalance)"
+	@echo "  make migrate        Apply all DB migrations to running container"
+	@echo "  make ingest         Full ingest: profile → migrate → load into PostgreSQL"
+	@echo "  make validate       Run data integrity checks → writes to DB"
+	@echo "  make quality-report Generate HTML data quality report"
+	@echo "  make transform      Run feature engineering pipeline"
+	@echo "  make train          Train yield prediction model"
+	@echo "  make erd            Generate ERD diagram → docs/erd.png"
 	@echo ""
 	@echo "  make status       Full system health check"
 	@echo "  make test         Run pytest suite"
@@ -59,13 +61,22 @@ profile:
 	.venv/bin/python pipeline/ingest/profile_secom.py
 
 migrate:
-	@echo "Applying migration 002 …"
+	@echo "Applying all migrations …"
 	docker exec -i sentinel_postgres psql -U sentinel -d sentinel_db \
 		< db/migrations/002_audit_columns.sql
-	@echo "Migration 002 applied."
+	docker exec -i sentinel_postgres psql -U sentinel -d sentinel_db \
+		< db/migrations/003_data_quality.sql
+	@echo "All migrations applied."
 
 ingest: profile migrate
 	.venv/bin/python pipeline/ingest/load_secom.py
+
+validate:
+	.venv/bin/python pipeline/transform/validate.py
+
+quality-report:
+	mkdir -p data/exports
+	.venv/bin/python scripts/generate_quality_report.py
 
 transform:
 	.venv/bin/python pipeline/transform/clean_features.py
