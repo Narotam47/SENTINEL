@@ -1,0 +1,59 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "annotations": { "list": [] },
+  "description": "SENTINEL — Manufacturing Yield Overview",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red", "value": null },
+            { "color": "yellow", "value": 0.85 },
+            { "color": "green", "value": 0.93 }
+          ]}
+        }
+      },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "options": { "colorMode": "background", "graphMode": "none",
+                   "justifyMode": "center", "orientation": "auto",
+                   "reduceOptions": { "calcs": ["lastNotNull"] },
+                   "textMode": "auto" },
+      "title": "Overall Yield Rate",
+      "type": "stat",
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+        "format": "table",
+        "rawSql": "SELECT yield_rate FROM yield_metrics WHERE window_type='daily' ORDER BY window_end DESC LIMIT 1",
+        "refId": "A"
+      }]
+    },
+    {
+      "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } } },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+      "id": 2,
+      "options": { "tooltip": { "mode": "multi" } },
+      "title": "Yield Rate Over Time (Daily)",
+      "type": "timeseries",
+      "targets": [{
+        "datasource": { "type": "postgres", "uid": "sentinel-pg" },
+        "format": "time_series",
+        "rawSql": "SELECT window_end AS time, yield_rate FROM yield_metrics WHERE window_type='daily' ORDER BY window_end",
+        "refId": "A"
+      }]
+    }
+  ],
+  "schemaVersion": 38,
+  "tags": ["sentinel", "yield", "manufacturing"],
+  "title": "SENTINEL — Yield Overview",
+  "uid": "sentinel-overview",
+  "version": 1
+}
