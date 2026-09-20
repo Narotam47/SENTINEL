@@ -38,7 +38,7 @@ help:
 up:
 	docker compose up -d
 	@echo ""
-	@echo "  PostgreSQL : localhost:5432  (user: sentinel / pass: sentinel_pass)"
+	@echo "  PostgreSQL : localhost:5433  (user: sentinel / pass: sentinel_pass)"
 	@echo "  Grafana    : http://localhost:3000  (admin / sentinel_grafana)"
 	@echo ""
 

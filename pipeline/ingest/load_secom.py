@@ -39,7 +39,7 @@ DATA_RAW = ROOT / "data" / "raw"
 def _conn_params() -> dict:
     return {
         "host":     os.getenv("POSTGRES_HOST",     "localhost"),
-        "port":     int(os.getenv("POSTGRES_PORT", "5432")),
+        "port":     int(os.getenv("POSTGRES_PORT", "5433")),
         "dbname":   os.getenv("POSTGRES_DB",       "sentinel_db"),
         "user":     os.getenv("POSTGRES_USER",     "sentinel"),
         "password": os.getenv("POSTGRES_PASSWORD", "sentinel_pass"),

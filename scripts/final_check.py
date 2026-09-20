@@ -7,7 +7,7 @@ from pathlib import Path
 import psycopg2
 import requests
 
-DB_DSN = "host=localhost port=5432 dbname=sentinel_db user=sentinel password=sentinel_pass"
+DB_DSN = "host=localhost port=5433 dbname=sentinel_db user=sentinel password=sentinel_pass"
 GRAFANA_BASE = "http://localhost:3000"
 GRAFANA_AUTH = ("admin", "sentinel_grafana")
 PROJECT_ROOT = Path(__file__).parent.parent
