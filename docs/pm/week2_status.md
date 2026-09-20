@@ -11,7 +11,7 @@
 
 Week 2 delivered the full analytics layer (Phases 3–4) and the PM documentation suite (Phase 5), closing the project on the Sep 20 target. Phase 3 ran 2 days ahead of plan, creating buffer that absorbed the Grafana 10 JSON debugging on Phase 4. The final test count stands at 67/67 across all three test modules. The `scripts/final_check.py` verification script confirms the complete system is operational.
 
-**Key numbers this week: 590 → 393 sensors selected; ~110 anomalies flagged (7%); 6 Grafana panels live; 67/67 tests green; 8 risk items closed.**
+**Key numbers this week: 590 → 270 sensors selected; ~110 anomalies flagged (7%); 6 Grafana panels live; 67/67 tests green; 8 risk items closed.**
 
 ---
 
@@ -19,8 +19,8 @@ Week 2 delivered the full analytics layer (Phases 3–4) and the PM documentatio
 
 | Item | Output | Phase |
 |------|--------|-------|
-| Feature selection pipeline | 4-step filter (missing → constant → corr → MI); 590→393 sensors; `selected_features.csv` + `secom_features` table | P3A |
-| SPC I-MR control charts | `spc.py` — σ̂ = MR̄/d₂; 4 Western Electric rules; ~400 flags written to `spc_flags` | P3B |
+| Feature selection pipeline | 4-step filter (missing → constant → corr → MI); 590→270 sensors; `selected_features.csv` + `secom_features` table | P3A |
+| SPC I-MR control charts | `spc.py` — σ̂ = MR̄/d₂; 4 Western Electric rules; 4,147 flags written to `spc_flags` | P3B |
 | Anomaly detection | `anomaly.py` — IsolationForest, contamination=0.07; `secom_raw.anomaly_score` + `.is_anomaly`; `anomaly_summary.csv` | P3C |
 | Yield correlation | `yield_analysis.py` — RandomForest 200 trees, class_weight='balanced'; `yield_feature_importance.csv`; `yield_drivers` table | P3D |
 | Analytics migration | `004_spc.sql` — `spc_flags`, `yield_drivers`, anomaly columns on `secom_raw` (idempotent) | P3 |
@@ -69,9 +69,9 @@ Nothing in progress — project is complete.
 | Phases completed | 5 of 5 (100%) |
 | Tests passing | 67 / 67 |
 | DB tables | 10 (all populated) |
-| Sensors selected | 393 / 590 |
+| Sensors selected | 270 / 590 |
 | Anomalies flagged | ~110 (7.0% of 1,567 runs) |
-| SPC flags written | ~400 (across top-10 sensors, 4 WE rules) |
+| SPC flags written | 4,147 (across top-10 sensors, 4 WE rules) |
 | Grafana panels | 6 |
 | PM documents | 6 (WBS, milestones, risks, 2× status, requirements) |
 | Estimated hours this week | 27.0 h |
@@ -84,5 +84,5 @@ Nothing in progress — project is complete.
 
 1. **Profile before you parse** — running the data profiler in Phase 1 revealed the timestamp anomaly within minutes. Pattern: always validate source file structure before building the ingest pipeline.
 2. **Grafana docs lag the release** — Grafana 10 introduced breaking changes in barchart panel options; the official docs still showed the Grafana 9 schema. Pattern: read the schema version changelog, not just the feature docs.
-3. **MI ranking was the right pivot** — removing the high-correlation step alone (step 3) only reduced ~14 sensors. The MI step (step 4) identified which of the remaining 393 sensors actually matter for yield prediction. Both steps are load-bearing.
+3. **Both filter steps are load-bearing** — the correlation filter (step 3) reduced 442→270 sensors by removing redundant signals (dropped 172). The MI step (step 4) ranks the 270 survivors by information content for yield prediction; it does not apply an additional threshold cut. Skipping either step would leave redundant or uninformative sensors in the model.
 4. **class_weight='balanced' is not enough for 14:1 imbalance** — recall on the fail class was still 24% even with balanced weights. For a production model, SMOTE oversampling would be the next step. Documented in requirements as out-of-scope.

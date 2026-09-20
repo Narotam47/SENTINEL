@@ -13,7 +13,7 @@
 | M1 | Repo skeleton committed; Docker stack starts cleanly | Sep 8 | Sep 8 | ✅ DONE | — |
 | M2 | 1,567 SECOM records ingested with full audit trail (`batch_id`, timestamps) | Sep 11 | Sep 11 | ✅ DONE | +1.5 h timestamp parse bug; resolved same day |
 | M3 | Validation engine live; quality scores written to PostgreSQL; HTML report generated | Sep 15 | Sep 15 | ✅ DONE | — |
-| M4 | Feature selection complete; 590 → 393 sensors; `secom_features` populated | Sep 17 | Sep 15 | ✅ DONE (−2 d) | Completed ahead of schedule |
+| M4 | Feature selection complete; 590 → 270 sensors; `secom_features` populated | Sep 17 | Sep 15 | ✅ DONE (−2 d) | Completed ahead of schedule |
 | M5 | SPC flags, anomaly scores, yield model importances all written to DB | Sep 18 | Sep 17 | ✅ DONE (−1 d) | — |
 | M6 | Grafana dashboard provisioned; all 6 panels return data on `docker compose up` | Sep 19 | Sep 19 | ✅ DONE | — |
 | M7 | PM artifact suite committed; `README.md` production-ready; 67/67 tests green | Sep 20 | Sep 20 | ✅ DONE | — |

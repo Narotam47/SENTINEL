@@ -27,7 +27,7 @@ flowchart TD
     end
 
     subgraph Analytics["Phase 3 — Analytics"]
-        G[feature_selection.py\n590 → 393 sensors\nmissing · constant · corr · MI]
+        G[feature_selection.py\n590 → 270 sensors\nmissing · constant · corr · MI]
         H[spc.py\nI-MR charts · 4 WE rules\n→ spc_flags]
         I[anomaly.py\nIsolation Forest contamination=0.07\n→ secom_raw.is_anomaly]
         J[yield_analysis.py\nRandom Forest class_weight=balanced\n→ yield_drivers]
@@ -82,9 +82,9 @@ flowchart TD
 | `secom_raw` | 1,567 | `id`, `timestamp`, `label`, `features` (JSONB), `batch_id`, `anomaly_score`, `is_anomaly` |
 | `secom_features` | 1,567 | `raw_id` (FK), `features` (JSONB, selected sensors only) |
 | `data_quality` | ≥1 per run | `batch_id`, `quality_score`, `missing_pct`, `oor_pct`, `dup_ts_count`, `constant_sensor_count` |
-| `sensor_quality` | ~393 per run | `sensor_name`, `quality_score`, `missing_pct` |
+| `sensor_quality` | 590 per run | `sensor_name`, `quality_score`, `missing_pct` |
 | `validation_runs` | 1 per `make validate` | `batch_id`, `validated_at`, `quality_score` |
-| `spc_flags` | ~400 | `sensor_name`, `ts`, `rule_number`, `rule_desc`, `value`, `ucl`, `lcl` |
+| `spc_flags` | ~4,147 | `sensor_name`, `ts`, `rule_number`, `rule_desc`, `value`, `ucl`, `lcl` |
 | `yield_drivers` | 10 | `rank`, `sensor_name`, `importance_score`, `mi_score` |
 | `model_runs` | ≥1 | `run_id`, `model_type`, `params`, `created_at` |
 | `predictions` | 1,567 | `raw_id`, `run_id`, `predicted_label`, `probability` |
@@ -205,7 +205,7 @@ Full PM documentation lives in [`docs/pm/`](docs/pm/):
 
 **I-MR over X-bar R** — SECOM has one measurement per wafer run (no natural subgroups). I-MR control charts estimate σ from moving ranges (MR̄/d₂, d₂=1.128), which is the correct SPC method for individual observations.
 
-**Isolation Forest contamination=0.07** — The SECOM fail rate is 6.6% (104/1,567). Setting contamination slightly above the known failure rate ensures the model is calibrated to the real prevalence of anomalies.
+**Isolation Forest contamination=0.07** — The SECOM fail rate is 6.6% (104/1,567). Contamination was set at 0.07 to approximate the observed failure rate. The model identifies process anomalies that correlate with, but are not identical to, labeled failures.
 
 **class_weight='balanced' with stratified split** — A 14:1 pass/fail imbalance means accuracy alone is misleading. Balanced class weighting upweights the minority (fail) class during training; stratified splitting preserves the ratio in the test set. The model output is framed as feature importances for yield correlation, not as a production predictor.
 
@@ -222,6 +222,6 @@ Full PM documentation lives in [`docs/pm/`](docs/pm/):
 | Records | 1,567 wafer runs |
 | Sensors | 590 process measurements |
 | Label | Binary: −1 (pass) / +1 (fail) |
-| Date range | 2008-01-10 to 2008-07-04 |
+| Date range | 2008-07-19 to 2008-10-17 |
 | Fail rate | 6.6% (104 fail / 1,463 pass) |
 | Missing cells | ~5.4% overall; individual sensors up to 80%+ |
