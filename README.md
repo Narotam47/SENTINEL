@@ -1,6 +1,8 @@
 # SENTINEL
 ### Manufacturing Process Monitoring & Yield Analytics
 
+**Author:** Narotam Ojha · [narotamojha180@gmail.com](mailto:narotamojha180@gmail.com)
+
 > A production-grade data engineering and ML pipeline built on the UCI SECOM semiconductor manufacturing dataset. Demonstrates end-to-end ownership of data ingestion, statistical process control, predictive modelling, and real-time operational dashboards — the core skills of a Technical Program Manager in hardware/silicon development.
 
 ---

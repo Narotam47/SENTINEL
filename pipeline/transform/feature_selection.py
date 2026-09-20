@@ -186,22 +186,21 @@ def write_to_secom_features(
             int(row["_id"]),
             row["_timestamp"],
             label,
-            "fail" if label == 1 else "pass",
             str(row["_batch_id"]),
             json.dumps(feat),
         ))
 
     with conn.cursor() as cur:
-        cur.execute("TRUNCATE secom_features RESTART IDENTITY")
+        cur.execute("TRUNCATE secom_features CASCADE")
         psycopg2.extras.execute_values(
             cur,
             """
             INSERT INTO secom_features
-                (raw_id, timestamp, label, pass_fail, batch_id, features)
+                (raw_id, timestamp, label, batch_id, features)
             VALUES %s
             """,
             records,
-            template="(%s, %s, %s, %s, %s, %s::jsonb)",
+            template="(%s, %s, %s, %s, %s::jsonb)",
             page_size=200,
         )
     conn.commit()

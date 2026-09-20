@@ -48,14 +48,16 @@ def _load_files() -> tuple[pd.DataFrame, pd.DataFrame]:
         features = features.iloc[:, 1:].reset_index(drop=True)
     features.columns = [f"sensor_{i}" for i in range(features.shape[1])]
 
-    # Labels file: 3 whitespace-separated tokens — label, date, time
+    # Labels file: 3 whitespace tokens — label, "DD/MM/YYYY, HH:MM:SS"
+    # The quoted datetime splits on its internal space: "19/07/2008 → 11:55:00"
     labels_raw = pd.read_csv(
         labels_path, sep=r"\s+", header=None,
         names=["label", "date_str", "time_str"], engine="python"
     )
     labels_raw["timestamp"] = pd.to_datetime(
-        labels_raw["date_str"] + " " + labels_raw["time_str"],
-        format="%Y-%m-%d %H:%M:%S"
+        labels_raw["date_str"].str.strip('"') + " " + labels_raw["time_str"].str.strip('"'),
+        format="%d/%m/%Y %H:%M:%S",
+        dayfirst=True,
     )
     labels = labels_raw[["label", "timestamp"]].copy()
 

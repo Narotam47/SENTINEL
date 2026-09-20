@@ -289,10 +289,13 @@ def analyze_sensor(
 
     flag_records = []
     for idx, rule_num in violations:
+        ts = timestamps[idx]
+        if hasattr(ts, "item"):
+            ts = ts.item()
         flag_records.append({
             "sensor_name": sensor_name,
             "raw_id":      int(raw_ids[idx]),
-            "ts":          timestamps[idx],
+            "ts":          ts,
             "value":       None if np.isnan(raw_vals[idx]) else float(raw_vals[idx]),
             "rule_number": rule_num,
             "rule_desc":   RULE_DESCS[rule_num],

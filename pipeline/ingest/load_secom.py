@@ -3,7 +3,7 @@ Phase 1 — loads raw SECOM files into PostgreSQL secom_raw table.
 
 Source files expected at:
   data/raw/secom.data          1567 rows × 590 sensor readings (whitespace-separated)
-  data/raw/secom_labels.data   1567 rows: label(-1/1)  date  time
+  data/raw/secom_labels.data   1567 rows: label(-1/1)  "DD/MM/YYYY"  "HH:MM:SS"
 
 Every ingest run is tagged with a UUID batch_id so rows are fully auditable.
 """
@@ -85,8 +85,8 @@ def load_raw_files() -> pd.DataFrame:
              missing_cells, total_cells, missing_cells / total_cells * 100)
 
     # ── labels ───────────────────────────────────────────────────────────────
-    # File format: three whitespace-separated tokens per line: label  date  time
-    # e.g.  -1 2008-01-10 15:09:23
+    # File format: 3 whitespace tokens per line: label  "DD/MM/YYYY  HH:MM:SS"
+    # The quoted datetime splits on its internal space: "19/07/2008 → 11:55:00"
     log.info("Reading labels       (%s)", labels_path.name)
     labels_raw = pd.read_csv(
         labels_path,
@@ -96,8 +96,9 @@ def load_raw_files() -> pd.DataFrame:
         engine="python",
     )
     labels_raw["timestamp"] = pd.to_datetime(
-        labels_raw["date_str"] + " " + labels_raw["time_str"],
-        format="%Y-%m-%d %H:%M:%S",
+        labels_raw["date_str"].str.strip('"') + " " + labels_raw["time_str"].str.strip('"'),
+        format="%d/%m/%Y %H:%M:%S",
+        dayfirst=True,
     )
     labels = labels_raw[["label", "timestamp"]].copy()
 
